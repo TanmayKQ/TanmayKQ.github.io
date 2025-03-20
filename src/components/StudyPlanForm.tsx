@@ -36,20 +36,30 @@ const colorOptions = [
 
 interface StudyPlanFormProps {
   onSubmit: (subjects: Subject[], dailyHours: number, productivityRatings: any) => void;
+  initialSubjects?: Subject[];
+  initialDailyHours?: number;
+  initialProductivityRatings?: any;
 }
 
-export function StudyPlanForm({ onSubmit }: StudyPlanFormProps) {
-  const { toast } = useToast();
-  const [subjects, setSubjects] = useState<Partial<Subject>[]>([
-    { name: '', priority: 'medium', color: '#3b82f6', totalHours: 8 }
-  ]);
-  const [dailyHours, setDailyHours] = useState(4);
-  const [productivityRatings, setProductivityRatings] = useState({
+export function StudyPlanForm({ 
+  onSubmit, 
+  initialSubjects = [], 
+  initialDailyHours = 4, 
+  initialProductivityRatings = {
     morning: 75,
     afternoon: 60,
     evening: 85,
     night: 40
-  });
+  } 
+}: StudyPlanFormProps) {
+  const { toast } = useToast();
+  const [subjects, setSubjects] = useState<Partial<Subject>[]>(
+    initialSubjects.length > 0 
+      ? initialSubjects 
+      : [{ name: '', priority: 'medium', color: '#3b82f6', totalHours: 8 }]
+  );
+  const [dailyHours, setDailyHours] = useState(initialDailyHours);
+  const [productivityRatings, setProductivityRatings] = useState(initialProductivityRatings);
 
   const addSubject = () => {
     setSubjects([
@@ -87,8 +97,8 @@ export function StudyPlanForm({ onSubmit }: StudyPlanFormProps) {
     // Create proper Subject objects with IDs
     const completeSubjects = subjects.map(s => ({
       ...s,
-      id: crypto.randomUUID(),
-      completedHours: 0
+      id: s.id || crypto.randomUUID(),
+      completedHours: s.completedHours || 0
     })) as Subject[];
 
     onSubmit(completeSubjects, dailyHours, productivityRatings);
@@ -214,7 +224,7 @@ export function StudyPlanForm({ onSubmit }: StudyPlanFormProps) {
                 min={0}
                 max={100}
                 step={5}
-                value={[value]}
+                value={[value as number]}
                 onValueChange={(values) => 
                   setProductivityRatings({...productivityRatings, [time]: values[0]})
                 }
@@ -229,7 +239,7 @@ export function StudyPlanForm({ onSubmit }: StudyPlanFormProps) {
         size="lg" 
         className="w-full rounded-full mt-8"
       >
-        Generate Study Plan
+        {initialSubjects.length > 0 ? 'Update Study Plan' : 'Generate Study Plan'}
       </Button>
     </form>
   );

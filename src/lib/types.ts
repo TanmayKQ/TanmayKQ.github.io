@@ -53,3 +53,21 @@ export interface UserPreferences {
   };
   dailyGoalHours: number;
 }
+
+export interface StudySession {
+  id: string;
+  subjectId: string;
+  startTime: Date;
+  endTime: Date;
+  focusScore?: number;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'reminder' | 'achievement' | 'update';
+  isRead: boolean;
+  createdAt: Date;
+}

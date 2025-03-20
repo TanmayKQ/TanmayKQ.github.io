@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Timer } from '@/components/Timer';
 import { 
@@ -18,19 +17,19 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
 import { PomodoroSettings, Subject } from '@/lib/types';
 import { useToast } from '@/components/ui/use-toast';
-
-// Sample subjects (in a real app would come from user's study plan)
-const sampleSubjects: Subject[] = [
-  { id: '1', name: 'Mathematics', color: '#ef4444', priority: 'high', totalHours: 10, completedHours: 2 },
-  { id: '2', name: 'Physics', color: '#3b82f6', priority: 'medium', totalHours: 8, completedHours: 1 },
-  { id: '3', name: 'Literature', color: '#22c55e', priority: 'low', totalHours: 6, completedHours: 0.5 },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 const Focus = () => {
   const { toast } = useToast();
-  const [activeSubjectId, setActiveSubjectId] = useState<string>(sampleSubjects[0].id);
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [activeSubjectId, setActiveSubjectId] = useState<string>('');
   const [pomodoroSettings, setPomodoroSettings] = useState<PomodoroSettings>({
     focusTime: 25,
     shortBreakTime: 5,
@@ -38,22 +37,167 @@ const Focus = () => {
     longBreakInterval: 4,
   });
 
-  const activeSubject = sampleSubjects.find(s => s.id === activeSubjectId);
+  useEffect(() => {
+    if (user) {
+      fetchSubjectsAndSettings();
+    }
+  }, [user]);
 
-  const handleTimerComplete = () => {
-    toast({
-      title: "Session completed",
-      description: "Great job! Take a moment to reset before continuing.",
-    });
-    // In a real app, this would update the user's progress
+  const fetchSubjectsAndSettings = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch subjects
+      const { data: subjectsData, error: subjectsError } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('user_id', user?.id);
+
+      if (subjectsError) throw subjectsError;
+
+      // Fetch pomodoro settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('user_preferences')
+        .select('pomodoro_settings')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
+
+      // Update state with fetched data
+      if (subjectsData && subjectsData.length > 0) {
+        const formattedSubjects = subjectsData.map(s => ({
+          id: s.id,
+          name: s.name,
+          priority: s.priority,
+          color: s.color,
+          totalHours: s.total_hours,
+          completedHours: s.completed_hours
+        }));
+        setSubjects(formattedSubjects);
+        setActiveSubjectId(formattedSubjects[0].id);
+      }
+
+      if (settingsData?.pomodoro_settings) {
+        setPomodoroSettings(settingsData.pomodoro_settings);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Failed to load data",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateSetting = (setting: keyof PomodoroSettings, value: number) => {
-    setPomodoroSettings({
+  const activeSubject = subjects.find(s => s.id === activeSubjectId);
+
+  const handleTimerComplete = async () => {
+    if (!user || !activeSubjectId) return;
+    
+    try {
+      // Record the study session
+      const now = new Date();
+      const focusTime = pomodoroSettings.focusTime;
+      const startTime = new Date(now.getTime() - focusTime * 60 * 1000);
+      
+      const { error: sessionError } = await supabase
+        .from('study_sessions')
+        .insert({
+          user_id: user.id,
+          subject_id: activeSubjectId,
+          start_time: startTime.toISOString(),
+          end_time: now.toISOString(),
+          focus_score: Math.floor(Math.random() * 100) // Mock score for demo
+        });
+        
+      if (sessionError) throw sessionError;
+      
+      // Update subject completed hours
+      const subject = subjects.find(s => s.id === activeSubjectId);
+      if (subject) {
+        const updatedHours = subject.completedHours + (focusTime / 60);
+        
+        const { error: updateError } = await supabase
+          .from('subjects')
+          .update({ completed_hours: updatedHours })
+          .eq('id', activeSubjectId);
+          
+        if (updateError) throw updateError;
+        
+        // Update local state
+        setSubjects(subjects.map(s => 
+          s.id === activeSubjectId 
+            ? {...s, completedHours: updatedHours} 
+            : s
+        ));
+      }
+      
+      toast({
+        title: "Session completed",
+        description: `Great job! You've studied for ${focusTime} minutes.`,
+      });
+    } catch (error) {
+      console.error('Error recording session:', error);
+      toast({
+        title: "Failed to record session",
+        description: "Your progress might not be saved.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateSetting = async (setting: keyof PomodoroSettings, value: number) => {
+    const updatedSettings = {
       ...pomodoroSettings,
       [setting]: value,
-    });
+    };
+    
+    setPomodoroSettings(updatedSettings);
+    
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('user_preferences')
+          .upsert({
+            user_id: user.id,
+            pomodoro_settings: updatedSettings
+          }, { onConflict: 'user_id' });
+          
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error saving settings:', error);
+      }
+    }
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (subjects.length === 0) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto text-center py-16">
+          <h1 className="text-3xl md:text-4xl font-bold mb-6">No Subjects Found</h1>
+          <p className="text-muted-foreground mb-8">
+            You need to create a study plan before you can use the Focus Mode.
+          </p>
+          <Button asChild>
+            <Link to="/dashboard">Create Study Plan</Link>
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -76,7 +220,7 @@ const Focus = () => {
                     <SelectValue placeholder="Choose a subject" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sampleSubjects.map(subject => (
+                    {subjects.map(subject => (
                       <SelectItem key={subject.id} value={subject.id}>
                         <div className="flex items-center">
                           <div 
