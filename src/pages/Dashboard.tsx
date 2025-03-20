@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { StudyPlanForm } from '@/components/StudyPlanForm';
 import { ProgressView } from '@/components/ProgressView';
-import { Subject, TimeBlock } from '@/lib/types';
+import { Subject } from '@/lib/types';
 import { 
   Tabs, 
   TabsContent, 
@@ -11,7 +11,7 @@ import {
   TabsTrigger 
 } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, Subject as DbSubject } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Dashboard = () => {
@@ -68,10 +68,10 @@ const Dashboard = () => {
 
       // Update state with fetched data
       if (subjectsData && subjectsData.length > 0) {
-        setSubjects(subjectsData.map(s => ({
+        setSubjects(subjectsData.map((s: DbSubject) => ({
           id: s.id,
           name: s.name,
-          priority: s.priority,
+          priority: s.priority as 'high' | 'medium' | 'low',
           color: s.color,
           totalHours: s.total_hours,
           completedHours: s.completed_hours
@@ -156,7 +156,6 @@ const Dashboard = () => {
 
       // Insert new subjects
       const subjectsToInsert = subjects.map(s => ({
-        id: s.id,
         user_id: user.id,
         name: s.name,
         priority: s.priority,

@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -30,6 +60,107 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      study_sessions: {
+        Row: {
+          created_at: string
+          end_time: string
+          focus_score: number | null
+          id: string
+          start_time: string
+          subject_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          focus_score?: number | null
+          id?: string
+          start_time: string
+          subject_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          focus_score?: number | null
+          id?: string
+          start_time?: string
+          subject_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          color: string
+          completed_hours: number
+          created_at: string
+          id: string
+          name: string
+          priority: string
+          total_hours: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color: string
+          completed_hours?: number
+          created_at?: string
+          id?: string
+          name: string
+          priority: string
+          total_hours?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          completed_hours?: number
+          created_at?: string
+          id?: string
+          name?: string
+          priority?: string
+          total_hours?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          daily_goal_hours: number | null
+          pomodoro_settings: Json | null
+          productive_times: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_goal_hours?: number | null
+          pomodoro_settings?: Json | null
+          productive_times?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_goal_hours?: number | null
+          pomodoro_settings?: Json | null
+          productive_times?: Json | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

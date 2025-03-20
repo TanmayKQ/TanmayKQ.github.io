@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Timer } from '@/components/Timer';
@@ -20,7 +21,7 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { PomodoroSettings, Subject } from '@/lib/types';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, Subject as DbSubject, UserPreference } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -57,7 +58,7 @@ const Focus = () => {
       // Fetch pomodoro settings
       const { data: settingsData, error: settingsError } = await supabase
         .from('user_preferences')
-        .select('pomodoro_settings')
+        .select('*')
         .eq('user_id', user?.id)
         .single();
 
@@ -65,10 +66,10 @@ const Focus = () => {
 
       // Update state with fetched data
       if (subjectsData && subjectsData.length > 0) {
-        const formattedSubjects = subjectsData.map(s => ({
+        const formattedSubjects = subjectsData.map((s: DbSubject) => ({
           id: s.id,
           name: s.name,
-          priority: s.priority,
+          priority: s.priority as 'high' | 'medium' | 'low',
           color: s.color,
           totalHours: s.total_hours,
           completedHours: s.completed_hours
