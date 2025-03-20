@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 210 100% 50%;
+    --primary: 220 100% 50%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96%;
@@ -46,7 +46,7 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 100% 50%;
+    --primary: 220 100% 50%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 217 33% 17%;
@@ -98,7 +98,7 @@
 
 @layer components {
   .glassmorphism {
-    @apply bg-white/50 backdrop-blur-lg border border-white/20 shadow-elevation-low;
+    @apply bg-white/75 backdrop-blur-lg border border-white/20 shadow-elevation-low;
   }
 
   .text-balance {
@@ -121,6 +121,37 @@
   /* Input fields with consistent styling */
   .input-focus {
     @apply focus:ring-2 focus:ring-primary/50 focus:border-primary/50 focus:outline-none;
+  }
+
+  /* Auth form styling */
+  .auth-input {
+    @apply h-11 px-4 rounded-lg border border-input bg-background w-full;
+  }
+
+  /* Button with gradient */
+  .btn-gradient {
+    @apply bg-gradient-to-r from-primary to-blue-500 hover:from-primary/90 hover:to-blue-500/90;
+  }
+
+  /* Improved cards for content */
+  .content-card {
+    @apply bg-white rounded-xl border shadow-sm p-6 transition-all hover:shadow-md;
+  }
+}
+
+/* Enhanced animations */
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

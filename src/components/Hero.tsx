@@ -3,8 +3,11 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Clock, Brain, BarChart4 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Hero() {
+  const { user } = useAuth();
+  
   return (
     <div className="relative py-16 md:py-24 overflow-hidden">
       {/* Background decoration */}
@@ -28,8 +31,8 @@ export function Hero() {
           
           <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
             <Button asChild size="lg" className="flex-1 rounded-full gap-2 group">
-              <Link to="/dashboard">
-                Get started
+              <Link to={user ? "/dashboard" : "/auth"}>
+                {user ? "Go to Dashboard" : "Get started"}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
@@ -64,7 +67,7 @@ export function Hero() {
         </div>
         
         {/* Feature cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16" id="features">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16" id="features">
           <div className="rounded-xl p-6 border bg-card shadow-elevation-low card-hover">
             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <Clock className="h-6 w-6 text-primary" />

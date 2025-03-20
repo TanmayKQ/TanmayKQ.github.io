@@ -1,8 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, UserCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { name: 'Home', path: '/' },
@@ -14,6 +23,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,9 +72,31 @@ export function Navbar() {
                 {item.name}
               </Link>
             ))}
-            <Button size="sm" className="rounded-full px-6">
-              Get Started
-            </Button>
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <UserCircle className="h-6 w-6" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>Profile</DropdownMenuItem>
+                  <DropdownMenuItem>Settings</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button asChild size="sm" className="rounded-full px-6">
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -98,7 +130,21 @@ export function Navbar() {
                   {item.name}
                 </Link>
               ))}
-              <Button className="w-full rounded-full mt-3">Get Started</Button>
+              
+              {user ? (
+                <Button 
+                  variant="ghost" 
+                  className="justify-start px-3 py-2 text-base font-medium text-destructive" 
+                  onClick={() => signOut()}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </Button>
+              ) : (
+                <Button asChild className="w-full rounded-full mt-3">
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+              )}
             </div>
           </div>
         )}
