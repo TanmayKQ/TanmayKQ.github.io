@@ -18,11 +18,11 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { PomodoroSettings } from '@/lib/types';
+import { PomodoroSettings, Subject } from '@/lib/types';
 import { useToast } from '@/components/ui/use-toast';
 
 // Sample subjects (in a real app would come from user's study plan)
-const sampleSubjects = [
+const sampleSubjects: Subject[] = [
   { id: '1', name: 'Mathematics', color: '#ef4444', priority: 'high', totalHours: 10, completedHours: 2 },
   { id: '2', name: 'Physics', color: '#3b82f6', priority: 'medium', totalHours: 8, completedHours: 1 },
   { id: '3', name: 'Literature', color: '#22c55e', priority: 'low', totalHours: 6, completedHours: 0.5 },
