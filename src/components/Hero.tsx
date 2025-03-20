@@ -18,7 +18,7 @@ export function Hero() {
           </div>
           
           <h1 className="text-4xl md:text-5xl lg:text-display-medium font-bold tracking-tight mb-6 text-balance">
-            Optimize your study time for maximum productivity
+            Optimize your study routine for maximum productivity
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl">
@@ -48,7 +48,7 @@ export function Hero() {
                 <div className="h-3 w-3 rounded-full bg-muted-foreground/30" />
                 <div className="h-3 w-3 rounded-full bg-muted-foreground/30" />
               </div>
-              <div className="ml-4 text-xs font-medium text-muted-foreground">TimeWise Studio</div>
+              <div className="ml-4 text-xs font-medium text-muted-foreground">Study Routine Optimizer</div>
             </div>
             <div className="aspect-video w-full bg-white">
               <div className="w-full h-full flex items-center justify-center bg-secondary/50">

@@ -42,9 +42,9 @@ export function Navbar() {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-              <span className="font-bold text-primary-foreground">TW</span>
+              <span className="font-bold text-primary-foreground">SRO</span>
             </div>
-            <span className="font-medium text-xl">TimeWise</span>
+            <span className="font-medium text-xl">Study Routine Optimizer</span>
           </Link>
 
           {/* Desktop navigation */}
