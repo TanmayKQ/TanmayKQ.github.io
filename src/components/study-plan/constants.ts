@@ -16,4 +16,8 @@ export const colorOptions = [
   { name: 'Purple', value: '#a855f7' },
   { name: 'Fuchsia', value: '#d946ef' },
   { name: 'Pink', value: '#ec4899' },
+  { name: 'Rose', value: '#f43f5e' },
+  { name: 'Slate', value: '#64748b' },
+  { name: 'Gray', value: '#6b7280' },
+  { name: 'Zinc', value: '#71717a' },
 ];
