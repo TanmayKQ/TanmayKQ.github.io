@@ -9,33 +9,28 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { 
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { PomodoroSettings, Subject } from '@/lib/types';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase, Subject as DbSubject, UserPreference } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { PomodoroSettings } from '@/lib/types';
 
 const Focus = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [currentSubject, setCurrentSubject] = useState('');
+  const [subjects, setSubjects] = useState([]);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerEnded, setTimerEnded] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [activeSubjectId, setActiveSubjectId] = useState<string>('');
   const [pomodoroSettings, setPomodoroSettings] = useState<PomodoroSettings>({
     focusTime: 25,
     shortBreakTime: 5,
     longBreakTime: 15,
-    longBreakInterval: 4,
+    longBreakInterval: 4
   });
 
   useEffect(() => {
@@ -55,37 +50,47 @@ const Focus = () => {
 
       if (subjectsError) throw subjectsError;
 
-      // Fetch pomodoro settings
-      const { data: settingsData, error: settingsError } = await supabase
+      // Fetch user preferences
+      const { data: prefsData, error: prefsError } = await supabase
         .from('user_preferences')
         .select('*')
         .eq('user_id', user?.id)
         .single();
 
-      if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
-
-      // Update state with fetched data
       if (subjectsData && subjectsData.length > 0) {
-        const formattedSubjects = subjectsData.map((s: DbSubject) => ({
-          id: s.id,
-          name: s.name,
-          priority: s.priority as 'high' | 'medium' | 'low',
-          color: s.color,
-          totalHours: s.total_hours,
-          completedHours: s.completed_hours
-        }));
-        setSubjects(formattedSubjects);
-        setActiveSubjectId(formattedSubjects[0].id);
+        setSubjects(subjectsData);
+        setCurrentSubject(subjectsData[0].id);
+      } else {
+        // No subjects found
+        toast({
+          title: "No subjects found",
+          description: "Please create a study plan first",
+          variant: "destructive"
+        });
       }
 
-      if (settingsData?.pomodoro_settings) {
-        setPomodoroSettings(settingsData.pomodoro_settings);
+      // If user has pomodoro settings, use them
+      if (prefsData?.pomodoro_settings && 
+          typeof prefsData.pomodoro_settings === 'object' &&
+          !Array.isArray(prefsData.pomodoro_settings)) {
+          
+        const settings = prefsData.pomodoro_settings as Record<string, unknown>;
+        
+        // Create a properly typed settings object
+        const typedSettings: PomodoroSettings = {
+          focusTime: typeof settings.focusTime === 'number' ? settings.focusTime : 25,
+          shortBreakTime: typeof settings.shortBreakTime === 'number' ? settings.shortBreakTime : 5,
+          longBreakTime: typeof settings.longBreakTime === 'number' ? settings.longBreakTime : 15,
+          longBreakInterval: typeof settings.longBreakInterval === 'number' ? settings.longBreakInterval : 4
+        };
+        
+        setPomodoroSettings(typedSettings);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
         title: "Failed to load data",
-        description: "Please try again later.",
+        description: "Please try again later",
         variant: "destructive"
       });
     } finally {
@@ -93,91 +98,79 @@ const Focus = () => {
     }
   };
 
-  const activeSubject = subjects.find(s => s.id === activeSubjectId);
+  const handleTimerStart = () => {
+    setTimerRunning(true);
+    setTimerEnded(false);
+    setSessionStartTime(new Date());
+    
+    toast({
+      title: "Focus session started",
+      description: `Stay focused for the next ${pomodoroSettings.focusTime} minutes!`
+    });
+  };
 
-  const handleTimerComplete = async () => {
-    if (!user || !activeSubjectId) return;
+  const handleTimerEnd = async () => {
+    if (!sessionStartTime || !currentSubject) return;
+
+    setTimerRunning(false);
+    setTimerEnded(true);
     
     try {
+      // Get the subject that was being studied
+      const { data: subjectData, error: subjectError } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('id', currentSubject)
+        .single();
+      
+      if (subjectError) throw subjectError;
+      
       // Record the study session
       const now = new Date();
-      const focusTime = pomodoroSettings.focusTime;
-      const startTime = new Date(now.getTime() - focusTime * 60 * 1000);
+      const focusMinutes = pomodoroSettings.focusTime;
+      const startTime = sessionStartTime;
+      const endTime = now;
       
       const { error: sessionError } = await supabase
         .from('study_sessions')
         .insert({
-          user_id: user.id,
-          subject_id: activeSubjectId,
+          user_id: user?.id,
+          subject_id: currentSubject,
           start_time: startTime.toISOString(),
-          end_time: now.toISOString(),
-          focus_score: Math.floor(Math.random() * 100) // Mock score for demo
+          end_time: endTime.toISOString(),
+          focus_score: 95 // Mock focus score for now
         });
-        
+      
       if (sessionError) throw sessionError;
       
-      // Update subject completed hours
-      const subject = subjects.find(s => s.id === activeSubjectId);
-      if (subject) {
-        const updatedHours = subject.completedHours + (focusTime / 60);
-        
-        const { error: updateError } = await supabase
-          .from('subjects')
-          .update({ completed_hours: updatedHours })
-          .eq('id', activeSubjectId);
-          
-        if (updateError) throw updateError;
-        
-        // Update local state
-        setSubjects(subjects.map(s => 
-          s.id === activeSubjectId 
-            ? {...s, completedHours: updatedHours} 
-            : s
-        ));
-      }
+      // Update subject's completed hours
+      const completedHours = subjectData.completed_hours + (focusMinutes / 60);
+      
+      const { error: updateError } = await supabase
+        .from('subjects')
+        .update({ completed_hours: completedHours })
+        .eq('id', currentSubject);
+      
+      if (updateError) throw updateError;
       
       toast({
-        title: "Session completed",
-        description: `Great job! You've studied for ${focusTime} minutes.`,
+        title: "Session completed!",
+        description: `You've studied ${subjectData.name} for ${focusMinutes} minutes.`
       });
     } catch (error) {
       console.error('Error recording session:', error);
       toast({
         title: "Failed to record session",
-        description: "Your progress might not be saved.",
+        description: "Please try again later",
         variant: "destructive"
       });
-    }
-  };
-
-  const updateSetting = async (setting: keyof PomodoroSettings, value: number) => {
-    const updatedSettings = {
-      ...pomodoroSettings,
-      [setting]: value,
-    };
-    
-    setPomodoroSettings(updatedSettings);
-    
-    if (user) {
-      try {
-        const { error } = await supabase
-          .from('user_preferences')
-          .upsert({
-            user_id: user.id,
-            pomodoro_settings: updatedSettings
-          }, { onConflict: 'user_id' });
-          
-        if (error) throw error;
-      } catch (error) {
-        console.error('Error saving settings:', error);
-      }
     }
   };
 
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="max-w-5xl mx-auto w-full flex items-center justify-center min-h-[60vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       </Layout>
@@ -187,14 +180,20 @@ const Focus = () => {
   if (subjects.length === 0) {
     return (
       <Layout>
-        <div className="max-w-4xl mx-auto text-center py-16">
-          <h1 className="text-3xl md:text-4xl font-bold mb-6">No Subjects Found</h1>
-          <p className="text-muted-foreground mb-8">
-            You need to create a study plan before you can use the Focus Mode.
-          </p>
-          <Button asChild>
-            <Link to="/dashboard">Create Study Plan</Link>
-          </Button>
+        <div className="max-w-5xl mx-auto w-full">
+          <Card>
+            <CardHeader>
+              <CardTitle>Focus Mode</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>You haven't created any subjects yet. Please create a study plan first.</p>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={() => window.location.href = '/dashboard'}>
+                Go to Dashboard
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       </Layout>
     );
@@ -202,170 +201,115 @@ const Focus = () => {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-12 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">Focus Mode</h1>
-          <p className="text-muted-foreground">
-            Eliminate distractions and concentrate on your studies with the Pomodoro technique.
-          </p>
-        </div>
-
+      <div className="max-w-5xl mx-auto w-full">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">Focus Mode</h1>
+        <p className="text-muted-foreground mb-8">
+          Stay focused and track your study sessions.
+        </p>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-6">
-            {/* Subject selector */}
-            <Card className="shadow-elevation-low">
-              <CardContent className="pt-6">
-                <Label htmlFor="subject-select" className="mb-2 block">Select Subject</Label>
-                <Select value={activeSubjectId} onValueChange={setActiveSubjectId}>
-                  <SelectTrigger id="subject-select" className="w-full">
-                    <SelectValue placeholder="Choose a subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map(subject => (
-                      <SelectItem key={subject.id} value={subject.id}>
-                        <div className="flex items-center">
-                          <div 
-                            className="h-3 w-3 rounded-full mr-2" 
-                            style={{ backgroundColor: subject.color }} 
-                          />
-                          {subject.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <div className="col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Study Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Select Subject</label>
+                  <Select
+                    value={currentSubject}
+                    onValueChange={setCurrentSubject}
+                    disabled={timerRunning}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map((subject: any) => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          <div className="flex items-center">
+                            <div 
+                              className="h-3 w-3 rounded-full mr-2" 
+                              style={{ backgroundColor: subject.color }} 
+                            />
+                            {subject.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className="w-full" 
+                  onClick={handleTimerStart}
+                  disabled={timerRunning || !currentSubject}
+                >
+                  Start Focus Session
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Pomodoro Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Focus Time</label>
+                    <p className="text-2xl font-bold">{pomodoroSettings.focusTime} min</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Short Break</label>
+                    <p className="text-2xl font-bold">{pomodoroSettings.shortBreakTime} min</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Long Break</label>
+                    <p className="text-2xl font-bold">{pomodoroSettings.longBreakTime} min</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Interval</label>
+                    <p className="text-2xl font-bold">{pomodoroSettings.longBreakInterval} sessions</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-
-            {/* Timer */}
-            <Timer 
-              activeSubject={activeSubject} 
-              settings={pomodoroSettings} 
-              onComplete={handleTimerComplete} 
-            />
           </div>
-
-          <div className="space-y-6">
-            {/* Pomodoro settings */}
-            <Card className="shadow-elevation-low">
-              <CardContent className="pt-6">
-                <h3 className="text-lg font-medium mb-4">Timer Settings</h3>
+          
+          <div className="col-span-1 md:col-span-2">
+            <Card className="h-full flex flex-col">
+              <CardHeader>
+                <CardTitle className="text-center">Focus Timer</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col items-center justify-center">
+                <Timer 
+                  duration={pomodoroSettings.focusTime * 60} 
+                  running={timerRunning}
+                  onEnd={handleTimerEnd}
+                />
                 
-                <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="focus-time" className="border-b">
-                    <AccordionTrigger className="py-3">
-                      <div className="flex items-center">
-                        <span>Focus Time</span>
-                        <span className="ml-auto text-muted-foreground">{pomodoroSettings.focusTime} min</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="py-2">
-                        <Slider
-                          min={5}
-                          max={60}
-                          step={5}
-                          value={[pomodoroSettings.focusTime]}
-                          onValueChange={(values) => updateSetting('focusTime', values[0])}
-                        />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                  
-                  <AccordionItem value="short-break" className="border-b">
-                    <AccordionTrigger className="py-3">
-                      <div className="flex items-center">
-                        <span>Short Break</span>
-                        <span className="ml-auto text-muted-foreground">{pomodoroSettings.shortBreakTime} min</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="py-2">
-                        <Slider
-                          min={1}
-                          max={15}
-                          step={1}
-                          value={[pomodoroSettings.shortBreakTime]}
-                          onValueChange={(values) => updateSetting('shortBreakTime', values[0])}
-                        />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                  
-                  <AccordionItem value="long-break" className="border-b">
-                    <AccordionTrigger className="py-3">
-                      <div className="flex items-center">
-                        <span>Long Break</span>
-                        <span className="ml-auto text-muted-foreground">{pomodoroSettings.longBreakTime} min</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="py-2">
-                        <Slider
-                          min={10}
-                          max={30}
-                          step={5}
-                          value={[pomodoroSettings.longBreakTime]}
-                          onValueChange={(values) => updateSetting('longBreakTime', values[0])}
-                        />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                  
-                  <AccordionItem value="interval" className="border-b">
-                    <AccordionTrigger className="py-3">
-                      <div className="flex items-center">
-                        <span>Sessions Before Long Break</span>
-                        <span className="ml-auto text-muted-foreground">{pomodoroSettings.longBreakInterval}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="py-2">
-                        <Slider
-                          min={2}
-                          max={8}
-                          step={1}
-                          value={[pomodoroSettings.longBreakInterval]}
-                          onValueChange={(values) => updateSetting('longBreakInterval', values[0])}
-                        />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
+                {timerEnded && (
+                  <div className="mt-8 text-center">
+                    <h2 className="text-2xl font-bold text-primary mb-2">Session Complete!</h2>
+                    <p className="mb-4">Great job staying focused. Take a short break before your next session.</p>
+                    <Button onClick={handleTimerStart} className="mt-2">
+                      Start Another Session
+                    </Button>
+                  </div>
+                )}
               </CardContent>
-            </Card>
-
-            {/* Focus tips */}
-            <Card className="shadow-elevation-low">
-              <CardContent className="pt-6">
-                <h3 className="text-lg font-medium mb-4">Focus Tips</h3>
-                <ul className="space-y-3 text-sm">
-                  <li className="flex items-start">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-medium">1</span>
-                    </div>
-                    <p>Remove distractions by turning off notifications and placing your phone out of sight.</p>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-medium">2</span>
-                    </div>
-                    <p>Stay hydrated and keep a bottle of water nearby during your study sessions.</p>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-medium">3</span>
-                    </div>
-                    <p>Use your breaks to move around and stretch to maintain energy levels.</p>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-medium">4</span>
-                    </div>
-                    <p>After completing a focus session, write down what you accomplished to track progress.</p>
-                  </li>
-                </ul>
-              </CardContent>
+              <CardFooter className="justify-center">
+                {timerRunning && (
+                  <Button 
+                    variant="destructive"
+                    onClick={() => setTimerRunning(false)}
+                  >
+                    End Session Early
+                  </Button>
+                )}
+              </CardFooter>
             </Card>
           </div>
         </div>

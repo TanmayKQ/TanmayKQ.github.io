@@ -216,7 +216,7 @@ export function StudyPlanForm({
             <div key={time} className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor={`productivity-${time}`} className="capitalize">
-                  {time} ({value}%)
+                  {time} ({String(value)}%)
                 </Label>
               </div>
               <Slider
@@ -224,7 +224,7 @@ export function StudyPlanForm({
                 min={0}
                 max={100}
                 step={5}
-                value={[value as number]}
+                value={[Number(value)]}
                 onValueChange={(values) => 
                   setProductivityRatings({...productivityRatings, [time]: values[0]})
                 }
