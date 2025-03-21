@@ -14,53 +14,6 @@ const Index = () => {
       
       <Features />
       
-      {/* Testimonials section */}
-      <section className="py-16 md:py-24">
-        <div className="container px-4 md:px-6">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-              Students love TimeWise
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Join thousands of students who have transformed their study habits with our platform.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                quote: "TimeWise helped me organize my chaotic study schedule and actually stick to it. My grades improved dramatically this semester!",
-                author: "Sarah K.",
-                title: "Medical Student"
-              },
-              {
-                quote: "The focus timer is a game-changer. I've never been able to concentrate for long periods until I started using this app.",
-                author: "Michael T.",
-                title: "Computer Science Major"
-              },
-              {
-                quote: "I love how it adapts to my energy levels. Studying when I'm most productive has made a huge difference in my retention.",
-                author: "Aisha N.",
-                title: "Law Student"
-              }
-            ].map((testimonial, idx) => (
-              <div key={idx} className="bg-secondary/30 p-6 rounded-xl border shadow-elevation-low relative">
-                <div className="absolute top-0 left-10 transform -translate-y-1/2 text-4xl text-primary opacity-20">
-                  "
-                </div>
-                <blockquote className="mb-4 text-foreground">
-                  "{testimonial.quote}"
-                </blockquote>
-                <div className="mt-auto">
-                  <p className="font-medium">{testimonial.author}</p>
-                  <p className="text-sm text-muted-foreground">{testimonial.title}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      
       {/* How it works section */}
       <section className="py-16 md:py-24 bg-secondary/50">
         <div className="container px-4 md:px-6">
