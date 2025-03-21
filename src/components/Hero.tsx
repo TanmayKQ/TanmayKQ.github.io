@@ -17,7 +17,7 @@ export function Hero() {
       <div className="container px-4 md:px-6 relative z-10">
         <div className="flex flex-col items-center text-center mb-16 max-w-3xl mx-auto">
           <div className="inline-flex items-center px-3 py-1 mb-6 text-sm font-medium rounded-full bg-primary/10 text-primary">
-            <span className="mr-1.5">✨</span> Smarter studying, better results
+            <span className="mr-1.5">✨</span> TimeWise - best study optimizer app
           </div>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-8 text-balance">
