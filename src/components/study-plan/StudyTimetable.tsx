@@ -58,12 +58,17 @@ export const StudyTimetable: React.FC<StudyTimetableProps> = ({
 
     // Assign subjects to time slots based on productivity
     let subjectIndex = 0;
-    let remainingHours = { ...sortedSubjects.reduce((acc, subject) => ({ ...acc, [subject.id]: subject.allocatedHours }), {}) };
+    let remainingHours: Record<string, number> = {};
+    
+    // Initialize the remainingHours object with proper typing
+    sortedSubjects.forEach(subject => {
+      remainingHours[subject.id] = subject.allocatedHours;
+    });
     
     // First, assign high productivity slots
     for (const slot of sortedSlots) {
       // Skip if all subjects are allocated
-      if (Object.values(remainingHours).every(hours => hours <= 0)) break;
+      if (Object.values(remainingHours).every(hours => typeof hours === 'number' && hours <= 0)) break;
       
       // Find next subject with remaining hours
       while (subjectIndex < sortedSubjects.length && 
