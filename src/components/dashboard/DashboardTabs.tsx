@@ -25,6 +25,7 @@ interface DashboardTabsProps {
   streak: number;
   onFormSubmit: (subjects: Subject[], dailyHours: number, productivityRatings: any) => void;
   onCompleteSession: (subjectId: string) => void;
+  onResetPlan?: () => void;
 }
 
 export const DashboardTabs: React.FC<DashboardTabsProps> = ({
@@ -36,7 +37,8 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
   totalStudyTime,
   streak,
   onFormSubmit,
-  onCompleteSession
+  onCompleteSession,
+  onResetPlan
 }) => {
   return (
     <Tabs defaultValue={studyPlanCreated ? "progress" : "create"} className="w-full">

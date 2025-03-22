@@ -22,6 +22,7 @@ interface UseStudyDataReturn {
   fetchStudyData: () => Promise<void>;
   handleFormSubmit: (subjects: Subject[], dailyHours: number, productivityRatings: any) => Promise<void>;
   handleCompleteSession: (subjectId: string) => Promise<void>;
+  resetStudyPlan: () => Promise<void>;
 }
 
 export const useStudyData = (): UseStudyDataReturn => {
@@ -120,7 +121,18 @@ export const useStudyData = (): UseStudyDataReturn => {
       }
 
       if (sessionsData) {
-        setCompletedSessions(sessionsData.length);
+        // Filter only today's sessions
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const todaySessions = sessionsData.filter(session => {
+          const sessionDate = new Date(session.start_time);
+          sessionDate.setHours(0, 0, 0, 0);
+          return sessionDate.getTime() === today.getTime();
+        });
+        
+        setCompletedSessions(todaySessions.length);
+        
         const totalMinutes = sessionsData.reduce((acc, session) => {
           const duration = new Date(session.end_time).getTime() - new Date(session.start_time).getTime();
           return acc + duration / (1000 * 60);
@@ -208,17 +220,76 @@ export const useStudyData = (): UseStudyDataReturn => {
       
       toast({
         title: "Study Plan Created",
-        description: "Your personalized study plan is ready!",
+        description: "Your personalized daily study plan is ready!",
       });
       
-      // Initialize progress metrics
-      setCompletedSessions(0);
-      setTotalStudyTime(0);
-      setStreak(0);
+      // Initialize progress metrics if it's a new plan
+      if (!studyPlanCreated) {
+        resetDailyProgress();
+      }
     } catch (error) {
       console.error('Error saving study plan:', error);
       toast({
         title: "Failed to save study plan",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetDailyProgress = () => {
+    setCompletedSessions(0);
+    setTotalStudyTime(0);
+  };
+  
+  const resetStudyPlan = async () => {
+    if (!user) return;
+    
+    try {
+      // Delete all subjects
+      const { error: deleteError } = await supabase
+        .from('subjects')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (deleteError) throw deleteError;
+      
+      // Reset user preferences to defaults
+      const { error: prefsError } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: user.id,
+          daily_goal_hours: 4,
+          productive_times: {
+            morning: 75,
+            afternoon: 60,
+            evening: 85,
+            night: 40
+          }
+        }, { onConflict: 'user_id' });
+
+      if (prefsError) throw prefsError;
+      
+      // Update local state
+      setSubjects([]);
+      setDailyHours(4);
+      setProductivityRatings({
+        morning: 75,
+        afternoon: 60,
+        evening: 85,
+        night: 40
+      });
+      setStudyPlanCreated(false);
+      resetDailyProgress();
+      
+      toast({
+        title: "Study Plan Reset",
+        description: "Your study plan has been completely reset.",
+      });
+    } catch (error) {
+      console.error('Error resetting study plan:', error);
+      toast({
+        title: "Failed to reset study plan",
         description: "Please try again later.",
         variant: "destructive"
       });
@@ -297,6 +368,7 @@ export const useStudyData = (): UseStudyDataReturn => {
     isLoading,
     fetchStudyData,
     handleFormSubmit,
-    handleCompleteSession
+    handleCompleteSession,
+    resetStudyPlan
   };
 };

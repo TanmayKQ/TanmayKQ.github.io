@@ -16,7 +16,8 @@ const Dashboard = () => {
     streak,
     isLoading,
     handleFormSubmit,
-    handleCompleteSession
+    handleCompleteSession,
+    resetStudyPlan
   } = useStudyData();
 
   return (
@@ -35,6 +36,7 @@ const Dashboard = () => {
             streak={streak}
             onFormSubmit={handleFormSubmit}
             onCompleteSession={handleCompleteSession}
+            onResetPlan={resetStudyPlan}
           />
         )}
       </div>
