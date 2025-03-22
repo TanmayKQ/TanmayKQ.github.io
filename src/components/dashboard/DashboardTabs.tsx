@@ -65,6 +65,8 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
             completedSessions={completedSessions}
             totalStudyTime={totalStudyTime}
             streak={streak}
+            productivityRatings={productivityRatings}
+            dailyHours={dailyHours}
             onCompleteSession={onCompleteSession}
           />
         )}
