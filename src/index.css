@@ -98,7 +98,7 @@
 
 @layer components {
   .glassmorphism {
-    @apply bg-white/75 backdrop-blur-lg border border-white/20 shadow-elevation-low;
+    @apply bg-white/75 dark:bg-black/75 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-elevation-low;
   }
 
   .text-balance {
@@ -135,7 +135,7 @@
 
   /* Improved cards for content */
   .content-card {
-    @apply bg-white rounded-xl border shadow-sm p-6 transition-all hover:shadow-md;
+    @apply bg-white dark:bg-card rounded-xl border shadow-sm p-6 transition-all hover:shadow-md;
   }
 }
 

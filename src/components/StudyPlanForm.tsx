@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Subject } from '@/lib/types';
 import { useToast } from '@/components/ui/use-toast';
@@ -27,18 +27,27 @@ export function StudyPlanForm({
   } 
 }: StudyPlanFormProps) {
   const { toast } = useToast();
+  
+  // Set default total hours for new subjects based on daily hours
+  const [defaultTotalHours, setDefaultTotalHours] = useState(initialDailyHours * 2);
+  
   const [subjects, setSubjects] = useState<Partial<Subject>[]>(
     initialSubjects.length > 0 
       ? initialSubjects 
-      : [{ name: '', priority: 'medium', color: '#3b82f6', totalHours: 8 }]
+      : [{ name: '', priority: 'medium', color: '#3b82f6', totalHours: defaultTotalHours }]
   );
   const [dailyHours, setDailyHours] = useState(initialDailyHours);
   const [productivityRatings, setProductivityRatings] = useState(initialProductivityRatings);
 
+  // Update defaultTotalHours when dailyHours changes
+  useEffect(() => {
+    setDefaultTotalHours(dailyHours * 2);
+  }, [dailyHours]);
+
   const addSubject = () => {
     setSubjects([
       ...subjects, 
-      { name: '', priority: 'medium', color: colorOptions[Math.floor(Math.random() * colorOptions.length)].value, totalHours: 8 }
+      { name: '', priority: 'medium', color: colorOptions[Math.floor(Math.random() * colorOptions.length)].value, totalHours: defaultTotalHours }
     ]);
   };
 

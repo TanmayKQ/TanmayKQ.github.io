@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, UserCircle, LogOut } from 'lucide-react';
+import { Menu, X, UserCircle, LogOut, Settings, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -83,8 +83,18 @@ export function Navbar() {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()} className="text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
@@ -130,6 +140,23 @@ export function Navbar() {
                   {item.name}
                 </Link>
               ))}
+              
+              {user && (
+                <>
+                  <Link
+                    to="/profile"
+                    className="block px-3 py-2 text-base font-medium rounded-md button-transition text-foreground/70 hover:bg-secondary hover:text-foreground"
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    to="/settings"
+                    className="block px-3 py-2 text-base font-medium rounded-md button-transition text-foreground/70 hover:bg-secondary hover:text-foreground"
+                  >
+                    Settings
+                  </Link>
+                </>
+              )}
               
               {user ? (
                 <Button 
